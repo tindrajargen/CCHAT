@@ -58,7 +58,7 @@ channelHandle(St, {leave, PId, Nick}) ->
         true ->
             io:format("användaren finns i kanalen och tas bort"),
             io:fwrite("~p~n", [Nick]),
-            NewUsersList = [delete(PId, St#channelstate.users)],
+            NewUsersList = [lists:delete(PId, St#channelstate.users)],
             UpdatedUserList = St#channelstate{users = NewUsersList},
             {reply, ok, UpdatedUserList};
         false ->
