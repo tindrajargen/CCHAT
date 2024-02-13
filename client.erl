@@ -37,15 +37,17 @@ handle(St, {join, Channel}) ->
 handle(St, {leave, Channel}) ->
     % TODO: Implement this function
     Server = list_to_atom(Channel),
-    R = genserver:request(Server, {leave, self()}),
+    R = genserver:request(Server, {leave, self(), St#client_st.nick} ),
     % {reply, ok, St} ;
     {reply, R, St} ;
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
+    Server = list_to_atom(Channel),
+    R = genserver:request(Server, {message_send, self(),Channel, St#client_st.nick, Msg}),
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "message sending not implemented"}, St} ;
+    {reply, R, St} ;
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)

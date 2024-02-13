@@ -52,18 +52,31 @@ channelHandle(St, {join, PId}) ->
             UpdatedUserList = St#channelstate{users = NewUsersList},
             {reply, ok , UpdatedUserList}
     end;
-channelHandle(St, {leave, PId}) ->
+channelHandle(St, {leave, PId, Nick}) ->
     io:format("Du är inne i leave"),
     case lists:member(PId, St#channelstate.users) of
         true ->
             io:format("användaren finns i kanalen och tas bort"),
+            io:fwrite("~p~n", [Nick]),
             NewUsersList = [delete(PId, St#channelstate.users)],
             UpdatedUserList = St#channelstate{users = NewUsersList},
             {reply, ok, UpdatedUserList};
         false ->
             io:format("användaren finns inte i kanalen"),
             {reply, {error, user_not_joined, "User has not joined this channel"}, St}
+        end;
+    channelHandle(St, {message_send, PId, Channel, Nick, Msg}) ->
+        case lists:member(PId, St#channelstate.users) of 
+            true ->
+                Receivers = delete(PId, St#channelstate.users),
+                spawn(fun() -> lists:foreach(fun(P) ->
+                     genserver:request(P, {message_receive, Channel, Nick, Msg})
+                end, Receivers) end),
+                {reply, ok, St};
+            false ->
+                {reply, {error, user_not_joined, "User can not write messages in channel it has not joined"}, St}
         end.
+
 
 % together with any other associated processes
 stop(ServerAtom) ->
