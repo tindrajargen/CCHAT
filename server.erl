@@ -36,8 +36,8 @@ handle(St, {join, Channel, PId}) ->
         false ->
             NewChannelList = [Channel | St#serverstate.channels],
             UpdatedChannelState = St#serverstate{channels = NewChannelList},
-            R = genserver:start(list_to_atom(Channel), initialStateChannel(PId), fun channelHandle/2),
-            {reply, R, UpdatedChannelState}
+            genserver:start(list_to_atom(Channel), initialStateChannel(PId), fun channelHandle/2),
+            {reply, ok, UpdatedChannelState}
     end.
 % Stop the server process registered to the given name,
 channelHandle(St, {join, PId}) ->

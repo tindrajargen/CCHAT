@@ -29,17 +29,17 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join channel
 handle(St, {join, Channel}) ->
     % TODO: Implement this function
-    genserver:request(St#client_st.server,{join, Channel, self()}),
+    R = genserver:request(St#client_st.server,{join, Channel, self()}),
     % {reply, ok, St} ;
-    {reply, ok, St} ;
+    {reply, R, St} ;
 
 % Leave channel
 handle(St, {leave, Channel}) ->
     % TODO: Implement this function
     Server = list_to_atom(Channel),
-    genserver:request(Server, {leave, self()}),
+    R = genserver:request(Server, {leave, self()}),
     % {reply, ok, St} ;
-    {reply,ok, St} ;
+    {reply, R, St} ;
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
