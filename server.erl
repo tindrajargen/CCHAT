@@ -26,6 +26,7 @@ start(ServerAtom) ->
     % - Spawn a new process which waits for a message, handles it, then loops infinitely
     % - Register this process to ServerAtom
     genserver:start(ServerAtom, initialStateServer(), fun handle/2).
+%stop the server
 
 stop(ServerAtom) ->
         % TODO Implement function
