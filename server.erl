@@ -35,10 +35,14 @@ start(ServerAtom) ->
 %stop the server
 
 stop(ServerAtom) ->
-        % TODO Implement function
-        % Return ok
-    genserver:request(ServerAtom, stop),
-    genserver:stop(ServerAtom).
+    % TODO Implement function
+    % Return ok
+genserver:request(ServerAtom, stop),
+genserver:stop(ServerAtom).
+
+handle(St, stop) ->
+lists:foreach(fun(C) -> 
+    genserver:stop(C) end, St#serverstate.channels);
 
 handle(St, stop) ->
     lists:foreach(fun(C) -> 

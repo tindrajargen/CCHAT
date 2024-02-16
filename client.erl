@@ -28,34 +28,62 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 
 % Join channel
 handle(St, {join, Channel}) ->
+    Server = St#client_st.server,
+    case whereis(Server) of
+        undefined -> {reply, {error, server_not_reached, "The server does not exist"}, St};
+        _ ->
     % TODO: Implement this function
-    R = genserver:request(St#client_st.server,{join, Channel, self()}),
-    case catch R of
-        {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
-        timeout_error -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
-        _Else -> {reply, R, St}
+        try
+            R = genserver:request(Server,{join, Channel, self()}),
+            case R of
+                {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
+                _Else -> {reply, R, St}
+            end
+        catch 
+            throw:timeout_error ->
+                {reply, {error, server_not_reached, "Timeout error"}, St}
+        end
     end;
     % {reply, ok, St} ;
     
-
 % Leave channel
 handle(St, {leave, Channel}) ->
     % TODO: Implement this function
     Server = list_to_atom(Channel),
-    R = genserver:request(Server, {leave, self(), St#client_st.nick} ),
-    % {reply, ok, St} ;
-    {reply, R, St} ;
+    case whereis(Server) of
+        undefined -> {reply, {error, server_not_reached, "The server does not exist"}, St};
+        _ ->
+    % TODO: Implement this function
+        try
+            R = genserver:request(Server, {leave, self(), St#client_st.nick}),
+            case R of
+                {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
+                _Else -> {reply, R, St}
+            end
+        catch 
+            throw:timeout_error ->
+                {reply, {error, server_not_reached, "Timeout error"}, St}
+        end
+    end;
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
     Server = list_to_atom(Channel),
-    R = genserver:request(Server, {message_send, self(),Channel, St#client_st.nick, Msg}),
-    case catch R of
-        {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable."}, St};
-        timeout_error -> {reply, {error, server_not_reached, "The server is unreachable."}, St};
-        _Else -> {reply, R, St} 
-    % {reply, ok, St} ;
+    case whereis(Server) of
+        undefined -> {reply, {error, server_not_reached, "The server does not exist"}, St};
+        _ ->
+    % TODO: Implement this function
+        try
+            R = genserver:request(Server, {message_send, self(),Channel, St#client_st.nick, Msg}),
+            case R of
+                {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
+                _Else -> {reply, R, St}
+            end
+        catch 
+            throw:timeout_error ->
+                {reply, {error, server_not_reached, "Timeout error"}, St}
+        end
     end;
 
 % This case is only relevant for the distinction assignment!
