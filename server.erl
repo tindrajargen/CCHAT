@@ -12,7 +12,6 @@ initialStateServer() ->
     }.
 
 -record(channelstate, {
-    name,
     users
 }).
 
@@ -37,16 +36,15 @@ start(ServerAtom) ->
 stop(ServerAtom) ->
     % TODO Implement function
     % Return ok
-genserver:request(ServerAtom, stop),
-genserver:stop(ServerAtom).
+    genserver:request(ServerAtom, {stop}),
+    genserver:stop(ServerAtom).
 
-handle(St, stop) ->
+
+handle(St, {stop}) ->
 lists:foreach(fun(C) -> 
-    genserver:stop(C) end, St#serverstate.channels);
+    genserver:stop(list_to_atom(C)) end, St#serverstate.channels),
+    {reply, ok, St#serverstate{channels = []}};
 
-handle(St, stop) ->
-    lists:foreach(fun(C) -> 
-        genserver:stop(C) end, St#serverstate.channels);
 
 % serverns "join" kanal funktion
 %gå med i en kanal, om den inte redan finns skapa kanalen , om den finns skickas man till kanalens join 
