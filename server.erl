@@ -27,7 +27,16 @@ start(ServerAtom) ->
     % - Register this process to ServerAtom
     genserver:start(ServerAtom, initialStateServer(), fun handle/2).
 
+stop(ServerAtom) ->
+        % TODO Implement function
+        % Return ok
+    genserver:request(ServerAtom, stop),
+    genserver:stop(ServerAtom).
 
+handle(St, stop) ->
+    lists:foreach(fun(C) -> 
+        genserver:stop(C) end, St#serverstate.channels);
+    
 handle(St, {join, Channel, PId}) ->
     case lists:member(Channel, St#serverstate.channels) of
         true -> 
@@ -57,18 +66,21 @@ channelHandle(St, {leave, PId, Nick}) ->
     case lists:member(PId, St#channelstate.users) of
         true ->
             io:format("användaren finns i kanalen och tas bort"),
-            io:fwrite("~p~n", [Nick]),
-            NewUsersList = [lists:delete(PId, St#channelstate.users)],
+            io:fwrite("~p~n", [St#channelstate.users]),
+            io:fwrite("~p~n", [PId]),
+            NewUsersList = lists:delete(PId, St#channelstate.users),
             UpdatedUserList = St#channelstate{users = NewUsersList},
             {reply, ok, UpdatedUserList};
         false ->
             io:format("användaren finns inte i kanalen"),
+            io:fwrite("~p~n", [St#channelstate.users]),
+            io:fwrite("~p~n", [PId]),
             {reply, {error, user_not_joined, "User has not joined this channel"}, St}
         end;
     channelHandle(St, {message_send, PId, Channel, Nick, Msg}) ->
         case lists:member(PId, St#channelstate.users) of 
             true ->
-                Receivers = delete(PId, St#channelstate.users),
+                Receivers = lists:delete(PId, St#channelstate.users),
                 spawn(fun() -> lists:foreach(fun(P) ->
                      genserver:request(P, {message_receive, Channel, Nick, Msg})
                 end, Receivers) end),
@@ -79,14 +91,9 @@ channelHandle(St, {leave, PId, Nick}) ->
 
 
 % together with any other associated processes
-stop(ServerAtom) ->
-    % TODO Implement function
-    % Return ok
-    Pid = whereis(ServerAtom),
-case Pid of
-    %ett till case som felhanterar
-    _ ->
-        unregister(ServerAtom),
-        exit(ServerAtom, normal)
-end.
+
+
+
+       
+
 

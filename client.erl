@@ -29,9 +29,14 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join channel
 handle(St, {join, Channel}) ->
     % TODO: Implement this function
-    R = genserver:request(St#client_st.server,{join, Channel, self()}),
+    R = genserver:request(catch St#client_st.server,{join, Channel, self()}),
+    case R of
+        {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
+        timeout_error -> {reply, {error, server_not_reached, "The server is unreachable"}, St};
+        _Else -> {reply, R, St}
+    end;
     % {reply, ok, St} ;
-    {reply, R, St} ;
+    
 
 % Leave channel
 handle(St, {leave, Channel}) ->
@@ -45,9 +50,13 @@ handle(St, {leave, Channel}) ->
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
     Server = list_to_atom(Channel),
-    R = genserver:request(Server, {message_send, self(),Channel, St#client_st.nick, Msg}),
+    R = genserver:request(catch Server, {message_send, self(),Channel, St#client_st.nick, Msg}),
+    case R of
+        {'EXIT', _} -> {reply, {error, server_not_reached, "The server is unreachable."}, St};
+        timeout_error -> {reply, {error, server_not_reached, "The server is unreachable."}, St};
+        _Else -> {reply, R, St} 
     % {reply, ok, St} ;
-    {reply, R, St} ;
+    end;
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
