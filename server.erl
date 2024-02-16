@@ -12,9 +12,15 @@ initialStateServer() ->
     }.
 
 -record(channelstate, {
+    name,
     users
 }).
 
+% initialStateChannel(Channel,PId) -> 
+%     #channelstate{
+%         name = Channel,
+%         users = [PId]
+%         }.
 initialStateChannel(PId) -> 
     #channelstate{
         users = [PId]
@@ -37,31 +43,45 @@ stop(ServerAtom) ->
 handle(St, stop) ->
     lists:foreach(fun(C) -> 
         genserver:stop(C) end, St#serverstate.channels);
-    
+
+% serverns "join" kanal funktion
+%gå med i en kanal, om den inte redan finns skapa kanalen , om den finns skickas man till kanalens join 
 handle(St, {join, Channel, PId}) ->
-    case lists:member(Channel, St#serverstate.channels) of
+    ExistingChannels = St#serverstate.channels,
+    Server = list_to_atom(Channel),
+    case lists:member(Channel, ExistingChannels) of
         true -> 
-            R = genserver:request(list_to_atom(Channel), {join, PId}),
-            {reply, R, St#serverstate.channels};
+            io:format("kanalen finns, skickar till channelHandle"),
+            R = (catch genserver:request(Server, {join, PId})),
+            {reply, R, St};
         false ->
-            NewChannelList = [Channel | St#serverstate.channels],
-            UpdatedChannelState = St#serverstate{channels = NewChannelList},
-            genserver:start(list_to_atom(Channel), initialStateChannel(PId), fun channelHandle/2),
-            {reply, ok, UpdatedChannelState}
+            io:format("skapar en ny kanal"),
+            % NewChannelList = [Channel | St#serverstate.channels],
+            % UpdatedChannelState = St#serverstate{channels = NewChannelList},
+            % genserver:start(list_to_atom(Channel), initialStateChannel(PId), fun channelHandle/2),
+            % {reply, ok, UpdatedChannelState}
+            
+            spawn(genserver, start,[Server,initialStateChannel(PId), fun channelHandle/2]),
+            {reply, ok, St#serverstate{channels = [Channel | ExistingChannels]}}
     end.
-% Stop the server process registered to the given name,
+
+%Lägger till en användare i en kanal, om användaren redan är med läggs den inte till   
 channelHandle(St, {join, PId}) ->
     io:format("du är inne i channelHandle"),
-    case lists:member(PId, St#channelstate.users) of
+    Users = St#channelstate.users,
+    case lists:member(PId, Users) of
         true -> 
             io:format("användaren finns redan!"),
             {reply, {error, user_already_joined, "User is already in this channel"}, St};
         false -> 
+            io:format("~p~n",[St#channelstate.users]),
             io:format("försöker lägga till"),
-            NewUsersList = [PId | St#channelstate.users],
-            UpdatedUserList = St#channelstate{users = NewUsersList},
-            {reply, ok , UpdatedUserList}
+            % NewUsersList = [PId | St#channelstate.users],
+            % UpdatedUserList = St#channelstate{users = NewUsersList},
+            % {reply, ok , UpdatedUserList}
+            {reply,ok,St#channelstate{users = [PId | Users]}}
     end;
+
 channelHandle(St, {leave, PId, Nick}) ->
     io:format("Du är inne i leave"),
     case lists:member(PId, St#channelstate.users) of
