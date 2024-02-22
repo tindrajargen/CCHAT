@@ -22,41 +22,34 @@ initialStateChannel(PId) ->
 % Start a new server process with the given name
 % Do not change the signature of this function.
 start(ServerAtom) ->
-    % TODO Implement function
-    % - Spawn a new process which waits for a message, handles it, then loops infinitely
-    % - Register this process to ServerAtom
     genserver:start(ServerAtom, initialStateServer(), fun handle/2).
-%stop the server
 
+%Stops all Channels via the stop function below and then stops the ServerAtom.
 stop(ServerAtom) ->
-    % TODO Implement function
-    % Return ok
     genserver:request(ServerAtom, {stop}),
     genserver:stop(ServerAtom).
 
-
+%Loops through all channels and stops them.
 handle(St, {stop}) ->
 lists:foreach(fun(C) -> 
     genserver:stop(list_to_atom(C)) end, St#serverstate.channels),
     {reply, ok, St#serverstate{channels = []}};
 
-% serverns "join" kanal funktion
-%gå med i en kanal, om den inte redan finns skapa kanalen , om den finns skickas man till kanalens join 
+% Join function of the server. Checks if a channel exists, if not it creates a new Channel.
+% If it exists it calls the Join function of the channel.
 handle(St, {join, Channel, PId}) ->
     ExistingChannels = St#serverstate.channels,
     Server = list_to_atom(Channel),
     case lists:member(Channel, ExistingChannels) of
         true -> 
-            io:format("kanalen finns, skickar till channelHandle"),
             R = (catch genserver:request(Server, {join, PId})),
             {reply, R, St};
-        false ->
-            io:format("skapar en ny kanal"),           
+        false ->        
             spawn(genserver, start,[Server,initialStateChannel(PId), fun channelHandle/2]),
             {reply, ok, St#serverstate{channels = [Channel | ExistingChannels]}}
     end.
 
-%Lägger till en användare i en kanal, om användaren redan är med läggs den inte till   
+% Adds a user to a channel, if the user already exists it does not add it.  
 channelHandle(St, {join, PId}) ->
     Users = St#channelstate.users,
     case lists:member(PId, Users) of
@@ -66,6 +59,7 @@ channelHandle(St, {join, PId}) ->
             {reply,ok,St#channelstate{users = [PId | Users]}}
     end;
 
+%Makes a user leave a channel. If the user hasn't joined the channel, an error message is shown.
 channelHandle(St, {leave, PId, Nick}) ->
     case lists:member(PId, St#channelstate.users) of
         true ->
@@ -76,6 +70,8 @@ channelHandle(St, {leave, PId, Nick}) ->
             {reply, {error, user_not_joined, "User has not joined this channel"}, St}
         end;
 
+%The message function of the channel. It deletes the sender from the reciever list which is then looped through.
+% If a user is tryging to send a message to a channel it has not joined an error message is shown.
     channelHandle(St, {message_send, PId, Channel, Nick, Msg}) ->
         case lists:member(PId, St#channelstate.users) of 
             true ->
@@ -87,9 +83,6 @@ channelHandle(St, {leave, PId, Nick}) ->
             false ->
                 {reply, {error, user_not_joined, "User can not write messages in channel it has not joined"}, St}
         end.
-
-
-% together with any other associated processes
 
 
 

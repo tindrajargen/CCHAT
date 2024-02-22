@@ -32,7 +32,6 @@ handle(St, {join, Channel}) ->
     case whereis(Server) of
         undefined -> {reply, {error, server_not_reached, "The server does not exist"}, St};
         _ ->
-    % TODO: Implement this function
         try
             R = genserver:request(Server,{join, Channel, self()}),
             case R of
@@ -48,12 +47,10 @@ handle(St, {join, Channel}) ->
     
 % Leave channel
 handle(St, {leave, Channel}) ->
-    % TODO: Implement this function
     Server = list_to_atom(Channel),
     case whereis(Server) of
         undefined -> {reply, {error, server_not_reached, "The server does not exist"}, St};
         _ ->
-    % TODO: Implement this function
         try
             R = genserver:request(Server, {leave, self(), St#client_st.nick}),
             case R of
@@ -68,12 +65,10 @@ handle(St, {leave, Channel}) ->
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
-    % TODO: Implement this function
     Server = list_to_atom(Channel),
     case whereis(Server) of
         undefined -> {reply, {error, server_not_reached, "The server does not exist"}, St};
         _ ->
-    % TODO: Implement this function
         try
             R = genserver:request(Server, {message_send, self(),Channel, St#client_st.nick, Msg}),
             case R of
